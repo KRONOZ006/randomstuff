@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "randomstuff",
+  "version": "${version}",
+  "name": "randomstuff",
+  "description": "braincell loss",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/randomstuff/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "net.kronoz.randomstuff.client.RandomstuffDataGenerator"
+    ],
+    "client": [
+      "net.kronoz.randomstuff.client.RandomstuffClient"
+    ],
+    "main": [
+      "net.kronoz.randomstuff.Randomstuff"
+    ]
+  },
+  "mixins": [
+    "randomstuff.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}

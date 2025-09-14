@@ -3,93 +3,149 @@ package net.kronoz.randomstuff.item;
 import net.kronoz.randomstuff.entity.ModEntities;
 import net.kronoz.randomstuff.entity.OmegaEntity;
 import net.kronoz.randomstuff.sound.ModSounds;
-import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.component.type.ChargedProjectilesComponent;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.passive.PigEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ArrowEntity;
-import net.minecraft.entity.projectile.TridentEntity;
-import net.minecraft.entity.projectile.thrown.SnowballEntity;
-import net.minecraft.item.*;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.SwordItem;
+import net.minecraft.item.ToolMaterial;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.UseAction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public class AvoGaGlaiveItem extends SwordItem {
+    private static final int MAX_CHARGE_TICKS = 40;
+
     public AvoGaGlaiveItem(ToolMaterial material, int attackDamage, float attackSpeed, Settings settings) {
-        super(material, settings);
+        super(material, withAttributes(settings, attackDamage, attackSpeed));
     }
 
+    private static Settings withAttributes(Settings base, int attackDamage, float attackSpeed) {
+        AttributeModifiersComponent.Builder b = AttributeModifiersComponent.builder();
+
+        b.add(
+                net.minecraft.entity.attribute.EntityAttributes.GENERIC_ATTACK_DAMAGE,
+                new net.minecraft.entity.attribute.EntityAttributeModifier(
+                        Identifier.of("randomstuff", "avogaglaive_damage"),
+                        (double) attackDamage,
+                        net.minecraft.entity.attribute.EntityAttributeModifier.Operation.ADD_VALUE
+                ),
+                AttributeModifierSlot.MAINHAND
+        );
+
+        b.add(
+                net.minecraft.entity.attribute.EntityAttributes.GENERIC_ATTACK_SPEED,
+                new net.minecraft.entity.attribute.EntityAttributeModifier(
+                        Identifier.of("randomstuff", "avogaglaive_speed"),
+                        (double) attackSpeed,
+                        net.minecraft.entity.attribute.EntityAttributeModifier.Operation.ADD_VALUE
+                ),
+                AttributeModifierSlot.MAINHAND
+        );
+
+        return base.component(DataComponentTypes.ATTRIBUTE_MODIFIERS, b.build());
+    }
 
 
 
     @Override
+    public int getMaxUseTime(ItemStack stack, LivingEntity user) {
+        return MAX_CHARGE_TICKS;
+    }
+
+    @Override
+    public UseAction getUseAction(ItemStack stack) {
+        return UseAction.BOW;
+    }
+
+    @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        ItemStack itemStack = user.getStackInHand(hand);
-        world.playSound(null, user.getBlockPos(),
-                 ModSounds.CRACK,
-                SoundCategory.PLAYERS, 0.6f, 0.1f);
-        if (!world.isClient) {
-            OmegaEntity pig = new OmegaEntity(ModEntities.OMEGA, world);
+        ItemStack stack = user.getStackInHand(hand);
+        if (user.getItemCooldownManager().isCoolingDown(this)) {
+            return TypedActionResult.fail(stack);
+        }
 
-            // Set position in front of the player
-            pig.setYaw(user.getHeadYaw());
-            pig.updatePosition(user.getX(), user.getY() , user.getZ());
+        user.setCurrentHand(hand);
 
+        world.playSound(
+                null,
+                user.getX(), user.getY(), user.getZ(),
+                ModSounds.CRACK,
+                SoundCategory.PLAYERS,
+                0.6f, 0.1f
+        );
 
-
-            // Calculate forward motion from player's rotation
-            float yaw = user.getYaw();
-            float pitch = user.getPitch();
-
-            double x = -Math.sin(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
-            double y = -Math.sin(Math.toRadians(pitch));
-            double z = Math.cos(Math.toRadians(yaw)) * Math.cos(Math.toRadians(pitch));
-
-            double speed = 1.5; // Adjust how fast it flies
-            pig.setVelocity(x * speed, 0, z * speed);
-
-            pig.velocityModified = true;// Apply the velocity
-
-            pig.setNoDrag(true);
-
-
-
-            world.spawnEntity(pig);
-
-            }
-
-
-
-
-
-
-
-        return TypedActionResult.success(itemStack, world.isClient());
+        user.incrementStat(Stats.USED.getOrCreateStat(this));
+        return TypedActionResult.consume(stack);
     }
 
+    @Override
+    public void onStoppedUsing(ItemStack stack, World world, LivingEntity entity, int remainingUseTicks) {
+        if (!(entity instanceof PlayerEntity user)) return;
+        if (world.isClient) return;
 
+        int charge = MAX_CHARGE_TICKS - remainingUseTicks;
+        float p = Math.min(1.0f, charge / 20.0f);
+        float speed = 0.9f + 1.6f * p;
+        int cooldown = (int)(20 + p * 40);
 
+        OmegaEntity omega = new OmegaEntity(ModEntities.OMEGA, world);
+        Vec3d eye = user.getEyePos();
+        Vec3d look = user.getRotationVec(1.0f);
+        omega.refreshPositionAndAngles(
+                eye.x + look.x * 0.6,
+                eye.y - 0.15 + look.y * 0.6,
+                eye.z + look.z * 0.6,
+                user.getYaw(), user.getPitch()
+        );
+        omega.setVelocity(look.multiply(speed));
+        omega.velocityModified = true;
+        omega.setNoDrag(true);
+        omega.setOwner(user);
+
+        world.spawnEntity(omega);
+
+        world.playSound(
+                null,
+                user.getX(), user.getY(), user.getZ(),
+                SoundEvents.ITEM_TRIDENT_THROW,
+                SoundCategory.PLAYERS,
+                0.6f, 1.0f
+        );
+
+        user.getItemCooldownManager().set(this, cooldown);
+
+        EquipmentSlot slot = user.getActiveHand() == Hand.OFF_HAND ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND;
+        stack.damage(1, user, slot);
+    }
+
+    @Override
+    public boolean postHit(ItemStack stack, LivingEntity target, LivingEntity attacker) {
+        if (!attacker.getWorld().isClient) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0));
+            target.takeKnockback(0.3, attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
+        }
+        EquipmentSlot slot = (attacker.getMainHandStack() == stack) ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
+        stack.damage(1, attacker, slot);
+        return true;
+    }
+
+    @Override
     public ItemStack finishUsing(ItemStack stack, World world, LivingEntity user) {
-        this.playStopUsingSound(user);
-        return stack;
-    }
-
-    private void playStopUsingSound(LivingEntity user) {
         user.playSound(SoundEvents.ITEM_SPYGLASS_STOP_USING, 1.0F, 1.0F);
+        return stack;
     }
 }

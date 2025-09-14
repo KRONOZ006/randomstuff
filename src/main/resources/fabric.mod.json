@@ -24,7 +24,7 @@
     "randomstuff.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=${loader_version}",
+    "fabricloader": ">=0.16.14",
     "fabric": "*",
     "minecraft": "${minecraft_version}"
   }

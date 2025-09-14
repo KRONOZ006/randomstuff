@@ -1,0 +1,30 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with Blockbench",
+	"parent": "minecraft:item/handheld",
+	"textures": {
+		"layer0": "randomstuff:item/avo_ga_glaive"
+	},
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [-47.5, -90, 0],
+			"translation": [0, 7.75, 1],
+			"scale": [2, 2, 0.85]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [-47.5, 90, 0],
+			"translation": [0, 7.75, 1],
+			"scale": [2, 2, 0.85]
+		},
+		"firstperson_righthand": {
+			"rotation": [-47.5, -90, 0],
+			"translation": [0, 5.5, 1],
+			"scale": [1.6, 1.6, 0.85]
+		},
+		"firstperson_lefthand": {
+			"rotation": [47.5, -90, 0],
+			"translation": [0, 5.5, 1],
+			"scale": [1.6, 1.6, 0.85]
+		}
+	}
+}

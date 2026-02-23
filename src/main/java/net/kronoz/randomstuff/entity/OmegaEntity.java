@@ -3,6 +3,11 @@ package net.kronoz.randomstuff.entity;
 import foundry.veil.api.client.render.VeilRenderSystem;
 import foundry.veil.api.client.render.light.data.PointLightData;
 import foundry.veil.api.client.render.light.renderer.LightRenderHandle;
+import net.kronoz.randomstuff.particle.ModParticles;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.particle.BubblePopParticle;
 import net.minecraft.entity.AnimationState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -15,10 +20,16 @@ import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleType;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +39,8 @@ import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceC
 import software.bernie.geckolib.animation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
 public class OmegaEntity extends AnimalEntity implements GeoEntity {
@@ -52,10 +65,33 @@ public class OmegaEntity extends AnimalEntity implements GeoEntity {
     private final double minSize = 0.6;
     private final double maxSize = 2.5;
 
+
+    float minRandom = 1.3f;
+    float maxRandom = 2.0f;
+
+    Random random = new Random();
+
+    float pitch = minRandom + random.nextFloat() * (maxRandom - minRandom);
+
+// distance fom owner
+
+
+
+
     public OmegaEntity(EntityType<? extends AnimalEntity> type, World world) {
         super(type, world);
         this.ignoreCameraFrustum = true;
+
+        this.setInvulnerable(true);
+
+
+
+
     }
+
+
+
+
 
     public static DefaultAttributeContainer.Builder createAttributes() {
         return MobEntity.createMobAttributes()
@@ -67,6 +103,8 @@ public class OmegaEntity extends AnimalEntity implements GeoEntity {
     public void setOwner(@Nullable LivingEntity owner) {
         this.ownerUuid = owner != null ? owner.getUuid() : null;
     }
+
+
 
     @Nullable
     public Entity getOwnerEntity() {
@@ -86,6 +124,11 @@ public class OmegaEntity extends AnimalEntity implements GeoEntity {
             --this.idleAnimationTimeout;
         }
     }
+
+    @Override
+    public void takeKnockback(double strength, double x, double z) {
+    }
+
 
     @Override
     public void tick() {
@@ -111,11 +154,52 @@ public class OmegaEntity extends AnimalEntity implements GeoEntity {
             List<Entity> hits = this.getWorld().getOtherEntities(this, this.getBoundingBox(), e ->
                     e.isAlive() && e != this && !e.isSpectator() && !isOwner(e)
             );
+
+            BlockPos pos = this.getBlockPos();
+
+            for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.UP}) {
+                for (int i = 1; i <= 3; i++) { // check 1 to 3 blocks away
+                    BlockPos checkPos = pos.offset(dir, i);
+                    BlockState state = this.getWorld().getBlockState(checkPos);
+                    boolean solid = !state.getCollisionShape(this.getWorld(), checkPos).isEmpty();
+                    if (solid) {
+
+
+                            // Block is solid (has a hitbox)
+
+                            explodeAndRemove();
+                            return;
+
+                    }
+                }
+                BlockPos below = this.getBlockPos().down();
+                BlockState belowBlock = this.getWorld().getBlockState(below);;
+                boolean solidBelow = !belowBlock.getCollisionShape(this.getWorld(), below).isEmpty();
+                if (solidBelow) {
+                    explodeAndRemove();
+                    return;
+                }
+
+
+                }
+
+
+
+
+
+
+
+
+
+
+
             if (!hits.isEmpty()) {
                 explodeAndRemove();
                 return;
             }
         }
+
+
 
         if (this.getWorld().isClient) {
             setupAnimationStates();
@@ -146,7 +230,30 @@ public class OmegaEntity extends AnimalEntity implements GeoEntity {
 
     private void explodeAndRemove() {
         if (this.getWorld() instanceof ServerWorld sw) {
-            sw.createExplosion(this, this.getX(), this.getY(), this.getZ(), 4.5f, World.ExplosionSourceType.TNT);
+
+
+            sw.spawnParticles(ModParticles.GOLDEN_BURST_PARTICLE, getX(), getY() + 3, getZ(), 1, 0, 0, 0, 0);
+            sw.playSound(this, getBlockPos(), SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.AMBIENT, 10, pitch
+            );
+
+
+
+            Explosion explosion = new Explosion(
+                    sw,
+                    this.getOwnerEntity(), // source entity
+                    null, // use default DamageSource
+                    null, // use default ExplosionBehavior
+                    getX(), getY(), getZ(),
+                    2.5f,
+                    false, // no fire
+                    Explosion.DestructionType.DESTROY,
+                    ParticleTypes.ASH,   // normal explosion particle
+                    ParticleTypes.ASH,             // emitter particle for big explosions
+                    SoundEvents.ITEM_TRIDENT_THUNDER                // <- proper RegistryEntry<SoundEvent>
+            );
+
+            explosion.collectBlocksAndDamageEntities();
+            explosion.affectWorld(false);
         }
         this.discard();
     }

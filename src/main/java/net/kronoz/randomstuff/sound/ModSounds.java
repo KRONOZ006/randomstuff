@@ -8,6 +8,7 @@ import net.minecraft.util.Identifier;
 
 public class ModSounds {
     public static final SoundEvent CRACK = registerSoundEvent("crack");
+    public static final SoundEvent PARRY = registerSoundEvent("parry");
 
 
 

@@ -11,8 +11,14 @@ import net.minecraft.util.Identifier;
 public class ModItems {
     public static final Item AVO_GA_GLAIVE = registerItem("avo_ga_glaive",
             new AvoGaGlaiveItem(
-                    ToolMaterials.NETHERITE, 3, -3.4F,
+                    ToolMaterials.NETHERITE, 9, 0.9F,
                     new Item.Settings().maxCount(1).maxDamage(1).fireproof().attributeModifiers(SwordItem.createAttributeModifiers(ToolMaterials.NETHERITE,3, -3.5f)))
+
+    );
+    public static final Item ERIS = registerItem("eris",
+            new ErisItem(
+                    ToolMaterials.NETHERITE, 1.69f,
+                    new Item.Settings().maxCount(1).maxDamage(1).fireproof().attributeModifiers(SwordItem.createAttributeModifiers(ToolMaterials.NETHERITE,3, -1.5f)))
 
     );
 
@@ -26,6 +32,7 @@ public class ModItems {
 
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
             entries.add(AVO_GA_GLAIVE);
+            entries.add(ERIS);
 
         });
     }

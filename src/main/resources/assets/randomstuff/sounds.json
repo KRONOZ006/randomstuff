@@ -3,5 +3,13 @@
     "sounds": [
       "randomstuff:crack"
     ]
+  },
+
+
+  "parry":{
+    "sounds": [
+      "randomstuff:parry1",
+      "randomstuff:parry2"
+    ]
   }
 }

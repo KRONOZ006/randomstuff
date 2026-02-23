@@ -15,13 +15,16 @@ public class ModEntities {
             Identifier.of(Randomstuff.MOD_ID, "omega"),EntityType.Builder.create(OmegaEntity::new, SpawnGroup.MISC)
                     .dimensions(5f, 7f).build());
 
-
+    public static final EntityType<SawBladeEntity> SAWBLADE = Registry.register(Registries.ENTITY_TYPE,
+            Identifier.of(Randomstuff.MOD_ID, "sawblade"),EntityType.Builder.create(SawBladeEntity::new, SpawnGroup.MISC)
+                    .dimensions(2.5f, 3.5f).build());
     public static void registerModEntities(){
         Randomstuff.LOGGER.info("registering mod entities for " + Randomstuff.MOD_ID);
 
-        // Register entity attributes
+
 
      FabricDefaultAttributeRegistry.register(OMEGA, OmegaEntity.createAttributes());
+     FabricDefaultAttributeRegistry.register(SAWBLADE, SawBladeEntity.createAttributes());
 
     }
 }

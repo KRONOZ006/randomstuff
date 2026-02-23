@@ -12,9 +12,13 @@ import net.minecraft.entity.AnimationState;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.PassiveEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -41,6 +45,7 @@ import software.bernie.geckolib.animatable.instance.SingletonAnimatableInstanceC
 import software.bernie.geckolib.animation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -111,6 +116,31 @@ public class SawBladeEntity extends AnimalEntity implements GeoEntity {
 
 
 
+    }
+
+
+    private static final TrackedData<Optional<UUID>> OWNER =
+            DataTracker.registerData(SawBladeEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+
+    @Override
+    protected void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(OWNER, Optional.empty());
+    }
+
+    public void setOwner(@Nullable LivingEntity owner) {
+        this.dataTracker.set(OWNER, Optional.ofNullable(owner != null ? owner.getUuid() : null));
+    }
+
+    @Nullable
+    public LivingEntity getOwnerClient() {
+        Optional<UUID> optionalUuid = this.dataTracker.get(OWNER);
+        if (optionalUuid.isEmpty()) return null;
+
+        UUID uuid = optionalUuid.get();
+        Entity entity = this.getWorld().getPlayerByUuid(uuid);
+        if (entity instanceof LivingEntity living) return living;
+        return null;
     }
 
 
@@ -364,9 +394,9 @@ public class SawBladeEntity extends AnimalEntity implements GeoEntity {
         super.applyGravity();
     }
 
-    public void setOwner(@Nullable LivingEntity owner) {
-        this.ownerUuid = owner != null ? owner.getUuid() : null;
-    }
+//    public void setOwner(@Nullable LivingEntity owner) {
+//        this.ownerUuid = owner != null ? owner.getUuid() : null;
+//    }
 
 
     @Override

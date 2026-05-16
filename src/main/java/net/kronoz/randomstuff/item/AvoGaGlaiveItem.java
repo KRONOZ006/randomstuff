@@ -2,6 +2,7 @@ package net.kronoz.randomstuff.item;
 
 import net.kronoz.randomstuff.entity.ModEntities;
 import net.kronoz.randomstuff.entity.OmegaEntity;
+import net.kronoz.randomstuff.entity.SawBladeEntity;
 import net.kronoz.randomstuff.sound.ModSounds;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.AttributeModifierSlot;
@@ -206,25 +207,21 @@ public class AvoGaGlaiveItem extends SwordItem {
         float speed = 0.9f + 1.6f * p;
         int cooldown = (int)(20 + p * 40);
 
-        OmegaEntity omega = new OmegaEntity(ModEntities.SAWBLADE, world);
+        SawBladeEntity sawblade = new SawBladeEntity(ModEntities.SAWBLADE, world);
         Vec3d eye = user.getEyePos();
         Vec3d look = user.getRotationVec(1.0f);
-        omega.refreshPositionAndAngles(
+        sawblade.refreshPositionAndAngles(
                 eye.x + look.x * 0.6,
                 eye.y + 0.1 + look.y * 0.6,
                 eye.z + look.z * 0.6,
                 user.getYaw(), user.getPitch()
         );
-        omega.setVelocity(look.multiply(speed));
-        omega.velocityModified = true;
-        omega.setNoDrag(true);
-        omega.setOwner(user);
-        omega.setNoGravity(true);
+        sawblade.shootFromOwner(user, speed);
 
 
 
 
-        world.spawnEntity(omega);
+        world.spawnEntity(sawblade);
 
 
 

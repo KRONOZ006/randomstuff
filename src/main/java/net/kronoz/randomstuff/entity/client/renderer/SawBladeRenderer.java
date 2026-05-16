@@ -39,8 +39,13 @@ public class SawBladeRenderer extends DynamicGeoEntityRenderer<SawBladeEntity> {
     public void render(SawBladeEntity entity, float yaw, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider buffers, int light) {
 
+        float flightPitch = MathHelper.lerp(tickDelta, entity.prevPitch, entity.getPitch());
+        matrices.push();
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(flightPitch));
+
         // Render the normal GeckoLib model
         super.render(entity, yaw, tickDelta, matrices, buffers, light);
+        matrices.pop();
 
         LivingEntity owner = entity.getOwnerClient();
         if (owner == null) return;

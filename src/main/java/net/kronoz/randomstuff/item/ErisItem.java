@@ -122,9 +122,7 @@ public class ErisItem extends SwordItem implements GeoItem {
                 .add(0, 0.2, 0);
 
         omega.setPosition(spawnPos);
-        Vec3d playerVel = player.getVelocity();
-        omega.setVelocity(look.multiply(speed).add(playerVel.multiply(0.2)));
-        omega.setOwner(player);
+        omega.shootFromOwner(player, speed);
 
         world.spawnEntity(omega);
 
